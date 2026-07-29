@@ -22,6 +22,7 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:seed:prod": "tsx prisma/seed.prod.ts",
     "prisma:reset": "prisma migrate reset",
     "worker": "tsx watch src/queues/worker.ts",
     "prepare": "node -e \"try{require('husky')}catch(e){process.exit(0)}\""
