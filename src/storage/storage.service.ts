@@ -61,13 +61,20 @@ class StorageService {
     const key = this.buildKey(input.entityType, input.originalName);
     const extension = key.split('.').pop() ?? 'bin';
 
+    // No per-object ACL here on purpose: buckets created since April 2023
+    // default to Object Ownership "Bucket owner enforced", which disables
+    // ACLs entirely and makes S3 reject any PutObject that includes one
+    // (AccessControlListNotSupported). AWS's own guidance is to manage
+    // public/private access via a bucket policy or CloudFront + Origin
+    // Access Control instead — see docs/S3_SETUP.md step 5. `rule.isPublic`
+    // still controls what URL shape we hand back (see getPublicUrl), it
+    // just no longer tries to set an ACL on the object itself.
     await s3Client.send(
       new PutObjectCommand({
         Bucket: env.AWS_S3_BUCKET,
         Key: key,
         Body: input.buffer,
         ContentType: input.mimeType,
-        ACL: rule.isPublic ? 'public-read' : 'private',
         Metadata: { uploadedBy: input.uploadedBy, originalName: input.originalName },
       }),
     );

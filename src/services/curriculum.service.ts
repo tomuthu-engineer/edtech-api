@@ -5,6 +5,7 @@ import { lessonResourceRepository } from '@repositories/lessonResource.repositor
 import { courseService } from '@services/course.service';
 import { enrollmentService } from '@services/enrollment.service';
 import { storageService } from '@storage/storage.service';
+import { FILE_ENTITY_RULES } from '@storage/storage.constant';
 import { NotFoundError, ValidationError, AuthorizationError } from '@utils/errors';
 import { Role, STAFF_ROLES } from '@constants/roles.constant';
 
@@ -116,6 +117,24 @@ class CurriculumService {
   async attachLessonVideo(lessonId: string, key: string, durationSec: number | undefined, actor: ActorContext) {
     const lesson = await this.getLessonWithCourseOrThrow(lessonId);
     await courseService.assertEditable(lesson.module.courseId, actor);
+
+    // The key comes from the client after it uploads directly to S3 via the
+    // signed-URL flow — we never see that upload happen, so without this
+    // check any non-empty string would be accepted and silently saved as
+    // the lesson's video, whether or not anything was actually uploaded.
+    const expectedFolder = FILE_ENTITY_RULES[FileEntityType.LESSON_VIDEO].folder;
+    if (!key.startsWith(`${expectedFolder}/`)) {
+      throw new ValidationError('Invalid video key', [
+        { field: 'key', message: `Key must be a LESSON_VIDEO upload (expected prefix "${expectedFolder}/")` },
+      ]);
+    }
+
+    const uploadExists = await storageService.exists(key);
+    if (!uploadExists) {
+      throw new ValidationError('Invalid video key', [
+        { field: 'key', message: 'No file exists at this key — upload it via the signed URL first' },
+      ]);
+    }
 
     if (lesson.videoKey) {
       await storageService.delete(lesson.videoKey).catch(() => undefined);

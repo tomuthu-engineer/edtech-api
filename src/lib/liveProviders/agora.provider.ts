@@ -1,16 +1,16 @@
-import { randomUUID, createHmac } from 'crypto';
+import { randomUUID } from 'crypto';
+import { RtcTokenBuilder, RtcRole } from 'agora-token';
 import { env } from '@config/env';
 import { CreateRoomInput, CreateRoomResult, GenerateTokenInput, LiveProvider } from '@lib/liveProviders/liveProvider.interface';
 
+const TOKEN_TTL_SECONDS = 6 * 60 * 60; // 6h — matches LiveKitProvider's TTL
+
 /**
- * Agora adapter satisfying the same LiveProvider contract as LiveKit.
- * Agora's real RtcTokenBuilder algorithm (CRC32 channel name checksum +
- * AES-encrypted privilege bitmask) is non-trivial and normally comes from
- * their official `agora-access-token` server package — swap the body of
- * generateToken() for that package's `RtcTokenBuilder.buildTokenWithUid`
- * when going live with Agora. This HMAC-signed placeholder keeps the
- * interface wired end-to-end (routes, service, socket rooms) so switching
- * providers later is a one-file change.
+ * Agora adapter using Agora's own official `agora-token` package —
+ * RtcTokenBuilder.buildTokenWithUserAccount, so identities can stay UUID
+ * strings (our user ids) instead of needing to be mapped to numeric uids.
+ * Host/staff get PUBLISHER (can send audio/video); everyone else gets
+ * SUBSCRIBER (receive-only) — mirrors LiveKitProvider's canPublish split.
  */
 export class AgoraProvider implements LiveProvider {
   async createRoom(input: CreateRoomInput): Promise<CreateRoomResult> {
@@ -28,7 +28,16 @@ export class AgoraProvider implements LiveProvider {
       throw new Error('Agora is not configured: set AGORA_APP_ID / AGORA_APP_CERTIFICATE');
     }
 
-    const payload = `${env.AGORA_APP_ID}:${input.roomName}:${input.identity}:${input.isHost ? 'host' : 'audience'}`;
-    return createHmac('sha256', env.AGORA_APP_CERTIFICATE).update(payload).digest('hex');
+    const role = input.isHost ? RtcRole.PUBLISHER : RtcRole.SUBSCRIBER;
+
+    return RtcTokenBuilder.buildTokenWithUserAccount(
+      env.AGORA_APP_ID,
+      env.AGORA_APP_CERTIFICATE,
+      input.roomName,
+      input.identity,
+      role,
+      TOKEN_TTL_SECONDS,
+      TOKEN_TTL_SECONDS,
+    );
   }
 }

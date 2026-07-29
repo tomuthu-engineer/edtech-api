@@ -181,7 +181,14 @@ lessonsRouter.get(
  * /lessons/{lessonId}/video:
  *   post:
  *     tags: [Modules & Lessons]
- *     summary: Attach a lesson video after a signed-URL upload to S3 completes
+ *     summary: Step 3 — attach a lesson video after uploading it to S3 with a signed URL
+ *     description: >
+ *       Call this AFTER completing `POST /storage/signed-upload-url` (step 1)
+ *       and `PUT`-ing the actual video file to the returned `uploadUrl`
+ *       (step 2). The server verifies the `key` both starts with
+ *       `uploads/lessons/videos/` and actually exists in S3 (a HEAD request)
+ *       before saving it — a key with nothing uploaded behind it is rejected
+ *       with 400, not silently accepted.
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - $ref: '#/components/parameters/LessonIdParam'
@@ -190,7 +197,9 @@ lessonsRouter.get(
  *       content:
  *         application/json:
  *           schema: { $ref: '#/components/schemas/AttachLessonVideoBody' }
- *     responses: { 200: { description: Video attached } }
+ *     responses:
+ *       200: { description: Video attached }
+ *       400: { description: "Key doesn't match the expected prefix, or no object exists at that key in S3" }
  */
 lessonsRouter.post(
   '/:lessonId/video',

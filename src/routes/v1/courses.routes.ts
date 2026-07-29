@@ -110,6 +110,11 @@ coursesRouter.patch(
  *   patch:
  *     tags: [Courses]
  *     summary: Change course lifecycle status (draft/published/archived)
+ *     description: >
+ *       Publishing (`status: PUBLISHED`) is blocked with 400 if the course
+ *       has no lessons at all, or if any lesson with `contentType: VIDEO`
+ *       in its curriculum has no video uploaded yet — upload via
+ *       `POST /lessons/{lessonId}/video` first.
  *     security: [{ bearerAuth: [] }]
  *     parameters:
  *       - $ref: '#/components/parameters/IdParam'
@@ -118,7 +123,9 @@ coursesRouter.patch(
  *       content:
  *         application/json:
  *           schema: { $ref: '#/components/schemas/ChangeCourseStatusBody' }
- *     responses: { 200: { description: Status updated } }
+ *     responses:
+ *       200: { description: Status updated }
+ *       400: { description: "Blocked: one or more VIDEO lessons have no video uploaded" }
  */
 coursesRouter.patch(
   '/:id/status',

@@ -151,11 +151,18 @@ Controllers never call the AWS SDK — everything routes through `StorageService
   returns a pre-signed S3 URL — the client uploads directly to S3, then calls
   back (e.g. `POST /lessons/:id/video`) to persist the resulting key.
 
+See [docs/S3_SETUP.md](docs/S3_SETUP.md) for bucket creation, IAM policy, CORS
+config, and CloudFront setup.
+
 ## Live classes
 
 `src/lib/liveProviders/` defines a `LiveProvider` interface with `LiveKit` and
 `Agora` adapters. Swapping providers, or adding Zoom, is a single new class —
 `LiveService` and all routes are provider-agnostic.
+
+See [docs/LIVE_CLASS_SETUP.md](docs/LIVE_CLASS_SETUP.md) for provider
+credentials, the schedule/start/join/end flow, access control rules, and
+Socket.IO realtime events.
 
 ## Background jobs
 
@@ -175,6 +182,31 @@ npm test
 Unit tests mock repositories/external services (no live DB required).
 Integration tests exercise the Express app end-to-end for routing/validation/error-envelope
 behavior, with Prisma/Redis mocked so the suite is deterministic in CI without live infrastructure.
+
+## Client apps
+
+- [docs/API_REFERENCE.md](docs/API_REFERENCE.md) — every endpoint: auth/role
+  requirements, path/query params, request bodies, and response shapes, with
+  full entity type references.
+- [docs/STUDENT_WEB_APP_PROMPT.md](docs/STUDENT_WEB_APP_PROMPT.md) — a complete build
+  spec for the student-facing web app (feature list, full API reference, auth/session
+  strategy, realtime events, file uploads), generated from this backend's actual routes
+  and validators. Hand it to a coding agent, or use it yourself, to build that frontend.
+- [docs/LIVE_CLASS_FRONTEND_INTEGRATION.md](docs/LIVE_CLASS_FRONTEND_INTEGRATION.md) —
+  client-side wiring for live classes: LiveKit React components, Agora Web SDK NG,
+  a provider-agnostic room component, and package versions checked directly
+  against npm.
+- [docs/STUDENT_LIVE_CLASS_INTEGRATION.md](docs/STUDENT_LIVE_CLASS_INTEGRATION.md) —
+  the student-only live class surface: exact API request/response shapes,
+  the realtime event contract, and the screen-by-screen join/leave flow.
+- [docs/STUDENT_COMMUNITY_INTEGRATION.md](docs/STUDENT_COMMUNITY_INTEGRATION.md) —
+  the student-only community feed surface: posts/comments/replies/likes/
+  bookmarks/reports API contract, media upload path, realtime events, and
+  the feed screen-by-screen flow.
+- [docs/FRONTEND_UPDATE_LIVE_CLASS.md](docs/FRONTEND_UPDATE_LIVE_CLASS.md) —
+  breaking-change prompt for an already-built frontend: whiteboard was
+  removed and Agora switched to Interactive Live Streaming mode. Hand this
+  to whoever maintains the frontend if it predates this change.
 
 ## Environment variables
 

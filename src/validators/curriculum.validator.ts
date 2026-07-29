@@ -73,8 +73,15 @@ export const reorderLessonsValidator: RequestSchemas = {
 export const attachLessonVideoValidator: RequestSchemas = {
   params: z.object({ lessonId: z.string().uuid() }),
   body: z.object({
-    key: z.string().min(1),
-    durationSec: z.number().int().min(0).optional(),
+    key: z
+      .string()
+      .min(1)
+      .describe(
+        'The "key" returned by POST /storage/signed-upload-url (entityType=LESSON_VIDEO), ' +
+          'AFTER you have PUT the actual video file to that URL. Must start with ' +
+          '"uploads/lessons/videos/" and must already exist in S3 — verified server-side.',
+      ),
+    durationSec: z.number().int().min(0).optional().describe('Video duration in seconds, if known.'),
   }),
 };
 

@@ -1,8 +1,9 @@
 import { Course, CourseStatus, FileEntityType } from '@prisma/client';
 import { courseRepository, CourseListFilters } from '@repositories/course.repository';
+import { lessonRepository } from '@repositories/lesson.repository';
 import { storageService } from '@storage/storage.service';
 import { auditLogService } from '@services/auditLog.service';
-import { NotFoundError, AuthorizationError } from '@utils/errors';
+import { NotFoundError, AuthorizationError, ValidationError } from '@utils/errors';
 import { slugify, uniqueSlug } from '@utils/slugify';
 import { Role, STAFF_ROLES } from '@constants/roles.constant';
 
@@ -113,6 +114,21 @@ class CourseService {
 
   async changeStatus(id: string, status: CourseStatus, actor: ActorContext) {
     const course = await this.assertEditable(id, actor);
+
+    if (status === CourseStatus.PUBLISHED) {
+      const lessonCount = await lessonRepository.countByCourse(course.id);
+      if (lessonCount === 0) {
+        throw new ValidationError('Add at least one lesson before the course can be published');
+      }
+
+      const missingVideos = await lessonRepository.findVideoLessonsMissingVideo(course.id);
+      if (missingVideos.length > 0) {
+        throw new ValidationError(
+          'Every video lesson needs its video uploaded before the course can be published',
+          missingVideos.map((lesson) => ({ field: 'lessons', message: `"${lesson.title}" has no video uploaded` })),
+        );
+      }
+    }
 
     const timestampField =
       status === CourseStatus.PUBLISHED

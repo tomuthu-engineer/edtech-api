@@ -32,6 +32,20 @@ class LessonRepository {
     return (last?.sortOrder ?? -1) + 1;
   }
 
+  /** VIDEO-content lessons across a course's modules that have no video uploaded yet — used to gate publishing. */
+  findVideoLessonsMissingVideo(courseId: string): Promise<Pick<Lesson, 'id' | 'title'>[]> {
+    return prisma.lesson.findMany({
+      where: { module: { courseId }, contentType: 'VIDEO', videoKey: null },
+      select: { id: true, title: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  }
+
+  /** Total lesson count across a course's modules — used to gate publishing on having any curriculum at all. */
+  countByCourse(courseId: string): Promise<number> {
+    return prisma.lesson.count({ where: { module: { courseId } } });
+  }
+
   create(data: Prisma.LessonCreateInput): Promise<Lesson> {
     return prisma.lesson.create({ data });
   }

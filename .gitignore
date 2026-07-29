@@ -16,3 +16,4 @@ src/uploads/*
 !src/uploads/.gitkeep
 prisma/migrations/dev/
 *.tsbuildinfo
+docs/
